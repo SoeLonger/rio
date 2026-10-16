@@ -37,6 +37,8 @@
 #include <x_rio/msg_conversion.h>
 #include <x_rio/x_rio_ros.h>
 
+#include <x_rio/rot_PX4.h> //add by yano
+
 using namespace rio;
 
 XRioRos::XRioRos(ros::NodeHandle& nh) : nh_{nh}, initialized_{false}, yaw_aiding_manhattan_world_(nh)
@@ -57,6 +59,12 @@ XRioRos::XRioRos(ros::NodeHandle& nh) : nh_{nh}, initialized_{false}, yaw_aiding
   pub_twist_               = nh.advertise<geometry_msgs::TwistStamped>("twist", 1);
   pub_combined_radar_scan_ = nh.advertise<sensor_msgs::PointCloud2>("combined_radar_scan", 10);
   pub_radar_yaw_inlier_    = nh.advertise<sensor_msgs::PointCloud2>("yaw_inlier", 10);
+
+  //edit by yano
+  sub_alt = nh.subscribe("/sensor_platform/altitude", 2, &XRioRos::callback_alt,this);
+
+  //edit by soeda
+  sub_scan_matching_error = nh.subscribe("/scan_match/error_pos", 2, &XRioRos::callbackScanMatchingPose, this);
 
   if (config_.republish_ground_truth)
   {
@@ -338,6 +346,8 @@ void XRioRos::iterate()
   iterateRadarScan();
   iterateRadarSim();
   mutex_.unlock();
+  iterate_alt(); //edit by yano
+  iterate_scan_matching_kf(); //edit by soeda
 }
 
 void XRioRos::iterateImu()
@@ -595,6 +605,8 @@ void XRioRos::iterateRadarScan()
                 combined_cloud_msg.header.stamp    = x_rio_filter_.getTimestamp();
                 combined_cloud_msg.header.frame_id = body_frame_id_;
                 pub_combined_radar_scan_.publish(combined_cloud_msg);
+
+
               }
             }
             else
@@ -756,7 +768,10 @@ void XRioRos::publish()
   pose_stamped.header.stamp    = x_rio_filter_.getTimestamp();
   pose_stamped.header.frame_id = config_.frame_id;
   pose_stamped.pose            = tf2::toMsg(pose_ros);
-  pub_pose_.publish(pose_stamped);
+  //edit by yano
+  //pub_pose_.publish(pose_stamped);
+  pub_pose_.publish(rot_PX4(pose_stamped));
+  //edit end
 
   // twist
   geometry_msgs::TwistStamped twist_stamped;
@@ -886,3 +901,37 @@ void XRioRos::printStats()
   printf("  Attitude Error: %0.2fdeg\n\n", config_.yaw_0_deg - att_final.z());
   // clang-format on
 }
+
+//edit by yano
+void XRioRos::callback_alt(const naoqi_bridge_msgs::FloatStamped& msg){
+  alt_data = msg;
+  alt_flag++;
+  return;
+}
+
+void XRioRos::iterate_alt(){
+  if(alt_flag > 2 && initialized_){
+	  x_rio_filter_.kf_altitude(alt_data);
+    alt_flag = 0;
+  }
+  return;
+}
+
+//edit by soeda
+void XRioRos::iterate_scan_matching_kf()
+{
+  if (!scan_matching_error_flag)
+  {
+    return;
+  }
+
+  x_rio_filter_.kf_scan_matching(scan_matching_error);
+  scan_matching_error_flag = false;
+}
+
+void XRioRos::callbackScanMatchingPose(const geometry_msgs::PoseStamped& msg)
+{
+  scan_matching_error = msg;
+  scan_matching_error_flag = true;
+}
+//edit by soeda

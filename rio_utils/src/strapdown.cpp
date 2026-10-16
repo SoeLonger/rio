@@ -53,6 +53,7 @@ Strapdown::propagate(const NavigationSolution nav_sol_prev, const Vector3 a_b_ib
   // clang-format on
 
   Vector3 v_n_b = nav_sol_prev.v_n_b + C_n_b_prev * s_l + local_gravity_ * dt;
+  //Vector3 v_n_b = nav_sol_prev.v_n_b + C_n_b_prev * s_l; //edit by soeda
 
   // propagate position using chained Simpson's rule
   // clang-format off
@@ -63,6 +64,7 @@ Strapdown::propagate(const NavigationSolution nav_sol_prev, const Vector3 a_b_ib
 
   const Vector3 y_l    = (4 * v_01 + s_l) * dt / 6;
   const Vector3 p_n1_n = v_n_b_prev * dt + C_n_b_prev * y_l + 0.5 * local_gravity_ * dt * dt;
+  //const Vector3 p_n1_n = v_n_b_prev * dt + C_n_b_prev * y_l; //edit by soeda
   const Vector3 p_n_b  = Vector3(nav_sol_prev.getPosition_n_b() + p_n1_n);
 
   return NavigationSolution(p_n_b, q_n_b, v_n_b);

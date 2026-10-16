@@ -23,11 +23,12 @@ topic_ground_truth_twist: "/ground_truth/twist"
 topic_ground_truth_twist_body: "/ground_truth/twist_body"
 
 # KF Updates
-altimeter_update: False
+altimeter_update: True
 radar_update: True
-radar_yaw_update: True
+radar_yaw_update: False
 
-sigma_altimeter: 5.0
+#sigma_altimeter: 5.0
+sigma_altimeter: 0.75
 sigma_b_alt: 0
 
 # Radar Measurement Model
@@ -51,7 +52,8 @@ thresh_median_zero_velocity: 0.05
 allowed_outlier_percentage: 0.25
 sigma_zero_velocity_x: 0.025 # right
 sigma_zero_velocity_y: 0.025 # forward
-sigma_zero_velocity_z: 0.025 # up
+#sigma_zero_velocity_z: 0.025 # up
+sigma_zero_velocity_z: 0.05
 
 sigma_offset_radar_x: 0.05   # right
 sigma_offset_radar_y: 0.05  # forward
@@ -93,7 +95,8 @@ sigma_radar_yaw_deg: 3
 # Initialization
 T_init: 10
 calib_gyro: true
-g_n: 9.81
+#g_n: 9.81
+g_n: 9.7975
 
 p_0_x: 0
 p_0_y: 0
@@ -135,4 +138,5 @@ noise_psd_a: 0.03
 noise_psd_w_deg: 0.2
 noise_psd_b_a: 0.00001
 noise_psd_b_w_deg: 0.000005
-noise_psd_b_alt: 0.00001
+#noise_psd_b_alt: 0.00001
+noise_psd_b_alt: 10.0

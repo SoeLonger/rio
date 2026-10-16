@@ -27,6 +27,8 @@
 #include <x_rio/radar_clone.h>
 #include <x_rio/radar_clone_reduced.h>
 
+#include <naoqi_bridge_msgs/FloatStamped.h> //edit by yano
+
 namespace rio
 {
 /**
@@ -208,6 +210,9 @@ public:
     }
     return false;
   }
+
+ void kf_altitude(naoqi_bridge_msgs::FloatStamped data); //edit by yano
+ void kf_scan_matching(const geometry_msgs::PoseStamped& scan_matching_error); //edit by soeda
 
 protected:
   /**

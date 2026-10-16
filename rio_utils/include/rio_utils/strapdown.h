@@ -32,8 +32,7 @@ public:
    * @brief Strapdown constructor
    * @param local_gravity  local gravity using the NED convention
    */
-  Strapdown(const double local_gravity = 9.80665);
-
+    Strapdown(const double local_gravity = 9.80665);
   /**
    * @brief Propagates the given navigation solution using an IMU measurement
    * @param nav_sol_prev   previous navigation solution

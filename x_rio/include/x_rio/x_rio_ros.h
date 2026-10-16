@@ -47,6 +47,8 @@
 #include <x_rio/XRioConfig.h>
 #include <x_rio/yaw_aiding_manhattan_world.h>
 
+#include <naoqi_bridge_msgs/FloatStamped.h> //edit by yano
+
 namespace rio
 {
 /**
@@ -220,5 +222,22 @@ private:
   std::normal_distribution<double> noise_v_r_y_;
   std::normal_distribution<double> noise_v_r_z_;
   Vector3 sim_acc_offset_ = Vector3(0, 0, 0);
+
+  /**
+   * @brief This function was newly added to extend the existing functionality.
+   */
+   //edit by yano
+  ros::Subscriber sub_alt;
+  void iterate_alt();
+  void callback_alt(const naoqi_bridge_msgs::FloatStamped& msg);
+  naoqi_bridge_msgs::FloatStamped alt_data;
+  int alt_flag = 0;
+
+  //edit by soeda
+  ros::Subscriber sub_scan_matching_error;
+  void iterate_scan_matching_kf();
+  void callbackScanMatchingPose(const geometry_msgs::PoseStamped& msg);
+  geometry_msgs::PoseStamped scan_matching_error;
+  bool scan_matching_error_flag = false;
 };
 }  // namespace rio

@@ -471,3 +471,91 @@ bool XRioFilter::updateWithOutlierRejection(const Vector& r,
   }
   return true;
 }
+
+//edit by yano
+void XRioFilter::kf_altitude(naoqi_bridge_msgs::FloatStamped alt){
+  Matrix H = Matrix::Zero(1, getCovarianceMatrix().cols());
+  Vector r(1);
+  Vector R(1);
+  H(0, getErrorIdx().position + 2) = 1;
+
+  const float sigma_alt = 0.1;
+  const float estimate_z = getNavigationSolution().getPosition_n_b().z();
+  float alt_z = -(alt.data + 10.0);
+  const static float start_alt = -alt.data;
+
+  Quaternion atitude = getNavigationSolution().getQuaternion_n_b();
+  alt_z = (-alt.data * (atitude.z()*atitude.z() + atitude.w()*atitude.w() - atitude.x()*atitude.x() - atitude.y()*atitude.y()));
+  //ROS_INFO("alt_z:%lf", alt_z);
+  //ROS_INFO("estimate_z:%lf", estimate_z);
+  r[0] = estimate_z - (alt_z - start_alt);
+  R[0] = sigma_alt * sigma_alt;
+  kfUpdate(r, H, R);
+
+  return;
+}
+
+// edit by soeda
+void XRioFilter::kf_scan_matching(const geometry_msgs::PoseStamped& scan_matching_error)
+{
+  constexpr Real kPositionSigmaX = 0.5;
+  constexpr Real kPositionSigmaY = 0.5;
+  constexpr Real kPositionSigmaZ = 5.0;
+
+  static const Real kAttitudeSigmaRoll  = angles::from_degrees(45.0);
+  static const Real kAttitudeSigmaPitch = angles::from_degrees(45.0);
+  static const Real kAttitudeSigmaYaw   = angles::from_degrees(5.0);
+
+  const auto error_idx = getErrorIdx();
+
+  constexpr Real kOutlierProbability = 0.01;
+
+  Matrix H = Matrix::Zero(3, covariance_.cols());
+  Vector r(3);
+  Matrix3 R = Matrix3::Zero();
+
+  H.block<3, 3>(0, error_idx.position).setIdentity();
+
+  r << scan_matching_error.pose.position.x,
+       -scan_matching_error.pose.position.y,
+       -scan_matching_error.pose.position.z;
+
+  R.diagonal() <<
+    kPositionSigmaX * kPositionSigmaX,
+    kPositionSigmaY * kPositionSigmaY,
+    kPositionSigmaZ * kPositionSigmaZ;
+
+  if (!updateWithOutlierRejection(r, H, R, 3, kOutlierProbability, "Outlier scan matching position"))
+  {
+    return;
+  }
+
+  tf2::Quaternion attitude_error_ned(
+    scan_matching_error.pose.orientation.x,
+    -scan_matching_error.pose.orientation.y,
+    -scan_matching_error.pose.orientation.z,
+    scan_matching_error.pose.orientation.w);
+
+  attitude_error_ned.normalize();
+
+  EulerAngles attitude_error;
+
+  tf2::Matrix3x3 (attitude_error_ned).getEulerYPR(attitude_error.yaw(), attitude_error.pitch(), attitude_error.roll());
+
+  H.setZero();
+  H.block<3, 3>(0, error_idx.attitude).setIdentity();
+
+  r << attitude_error.roll(),
+       attitude_error.pitch(),
+       attitude_error.yaw();
+
+  R.diagonal() <<
+    kAttitudeSigmaRoll * kAttitudeSigmaRoll,
+    kAttitudeSigmaPitch * kAttitudeSigmaPitch,
+    kAttitudeSigmaYaw * kAttitudeSigmaYaw;
+
+  if (!updateWithOutlierRejection(r, H, R, 3, kOutlierProbability, "Outlier scan matching attitude"))
+  {
+    return;
+  }
+}
